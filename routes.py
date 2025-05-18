@@ -171,44 +171,37 @@ def browse_country(country_name):
     dishes = Dish.query.filter_by(country_id=country.id).all()
     return render_template('browse_country.html', country=country, dishes=dishes)
 
-@app.route('/map')
+@app.route('/food-map')
 def food_map():
-    # Get all continents with countries
     continents = Continent.query.all()
+    countries = Country.query.all()
     
-    # Count dishes per country for the map
-    country_stats = db.session.query(
-        Country.name, 
-        Country.id,
-        db.func.count(Dish.id).label('dish_count')
-    ).outerjoin(Dish).group_by(Country.id).all()
-    
-    # Format data for the map
-    map_data = {}
+    # Calculate dish counts by continent
+    dishes_by_continent = {}
     for continent in continents:
-        map_data[continent.name] = {
-            "id": continent.id,
-            "countries": []
-        }
-        
+        dish_count = 0
         for country in continent.countries:
-            country_data = {
-                "id": country.id,
-                "name": country.name,
-                "dish_count": 0
-            }
-            
-            # Find matching stat if exists
-            for stat in country_stats:
-                if stat[1] == country.id:
-                    country_data["dish_count"] = stat[2]
-                    break
-                    
-            map_data[continent.name]["countries"].append(country_data)
+            dish_count += len(country.dishes)
+        dishes_by_continent[continent.name] = dish_count
     
-    return render_template('food_map.html', 
+    # Get popular dishes (most favorited or highest rated)
+    popular_dishes = db.session.query(Dish)\
+        .join(Rating)\
+        .group_by(Dish.id)\
+        .order_by(db.func.avg(Rating.rating).desc())\
+        .limit(6)\
+        .all()
+    
+    # If not enough rated dishes, supplement with recent dishes
+    if len(popular_dishes) < 6:
+        recent_dishes = Dish.query.order_by(Dish.created_at.desc()).limit(6 - len(popular_dishes)).all()
+        popular_dishes.extend(recent_dishes)
+    
+    return render_template('food_map.html',
                           continents=continents,
-                          map_data=map_data)
+                          countries=countries,
+                          dishes_by_continent=dishes_by_continent,
+                          popular_dishes=popular_dishes)
 
 @app.route('/search')
 def search():
@@ -433,9 +426,68 @@ def admin_analytics_content():
         Dish, db.func.count(Favorite.id).label('favorite_count')
     ).join(Favorite).group_by(Dish.id).order_by(db.desc('favorite_count')).limit(10).all()
     
+    # Prepare data for charts
+    # 1. Top Dishes by Rating Chart
+    rating_labels = [dish[0].name for dish in top_rated_dishes[:7]]
+    rating_values = [float(dish[1]) for dish in top_rated_dishes[:7]]
+    rating_counts = [int(dish[2]) for dish in top_rated_dishes[:7]]
+    
+    # 2. Favorites Distribution Chart (top 5 dishes vs. others)
+    top_favorites = most_favorited[:5]
+    other_favorites_count = sum(dish[1] for dish in most_favorited[5:])
+    favorite_labels = [dish[0].name for dish in top_favorites]
+    favorite_values = [int(dish[1]) for dish in top_favorites]
+    if other_favorites_count > 0:
+        favorite_labels.append('Other Dishes')
+        favorite_values.append(other_favorites_count)
+    
+    # 3. Content by Continent Chart
+    continent_data = db.session.query(
+        Continent.name, db.func.count(Dish.id)
+    ).join(Country).join(Dish).group_by(Continent.id).all()
+    continent_labels = [item[0] for item in continent_data]
+    continent_values = [int(item[1]) for item in continent_data]
+    
+    # 4. User Engagement Over Time Chart (last 7 days)
+    import datetime
+    today = datetime.date.today()
+    dates = [(today - datetime.timedelta(days=i)) for i in range(6, -1, -1)]
+    time_labels = [date.strftime('%Y-%m-%d') for date in dates]
+    
+    # Get ratings count by day
+    ratings_by_time = []
+    for date in dates:
+        next_day = date + datetime.timedelta(days=1)
+        count = Rating.query.filter(
+            Rating.created_at >= date,
+            Rating.created_at < next_day
+        ).count()
+        ratings_by_time.append(count)
+    
+    # Get favorites count by day
+    favorites_by_time = []
+    for date in dates:
+        next_day = date + datetime.timedelta(days=1)
+        count = Favorite.query.filter(
+            Favorite.created_at >= date,
+            Favorite.created_at < next_day
+        ).count()
+        favorites_by_time.append(count)
+    
     return render_template('admin/analytics_content.html',
                           top_rated_dishes=top_rated_dishes,
-                          most_favorited=most_favorited)
+                          most_favorited=most_favorited,
+                          # Chart data
+                          rating_labels=rating_labels,
+                          rating_values=rating_values,
+                          rating_counts=rating_counts,
+                          favorite_labels=favorite_labels,
+                          favorite_values=favorite_values,
+                          continent_labels=continent_labels,
+                          continent_values=continent_values,
+                          time_labels=time_labels,
+                          ratings_by_time=ratings_by_time,
+                          favorites_by_time=favorites_by_time)
 
 @app.route('/admin/settings')
 @login_required
@@ -731,3 +783,25 @@ def admin_reset_password(user_id):
     db.session.commit()
     flash('Password reset successfully.', 'success')
     return redirect(url_for('admin_user_detail', user_id=user.id))
+
+@app.route('/popular-dishes')
+def popular_dishes():
+    """Display the most favorited dishes on the site."""
+    
+    # Get most favorited dishes with count
+    most_favorited = db.session.query(
+        Dish,
+        db.func.count(Favorite.id).label('favorite_count')
+    ).join(Favorite).group_by(Dish.id).order_by(db.desc('favorite_count')).limit(12).all()
+    
+    # Get highest rated dishes
+    top_rated = db.session.query(
+        Dish,
+        db.func.avg(Rating.rating).label('avg_rating'),
+        db.func.count(Rating.id).label('rating_count')
+    ).join(Rating).group_by(Dish.id).having(db.func.count(Rating.id) > 1).order_by(db.desc('avg_rating')).limit(6).all()
+    
+    return render_template('popular_dishes.html', 
+                          most_favorited=most_favorited,
+                          top_rated=top_rated,
+                          title="Popular Dishes")

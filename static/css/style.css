@@ -48,10 +48,10 @@ body {
     font-weight: bold;
 }
 
-/* Rating Stars */
+/* Fixed rating stars styling */
 .rating-stars {
-    display: inline-flex;
-    flex-direction: row-reverse;
+    display: flex; /* Changed to regular flex from flex-reverse */
+    flex-direction: row-reverse; /* This arrangement ensures 5-stars are leftmost */
     margin-bottom: 1rem;
 }
 
@@ -61,15 +61,27 @@ body {
 
 .rating-stars label {
     cursor: pointer;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+    padding: 0 0.2rem;
     color: #ddd;
-    margin-right: 0.25rem;
 }
 
-.rating-stars label:hover,
-.rating-stars label:hover ~ label,
-.rating-stars input:checked ~ label {
+.rating-stars label i.bi-star-fill {
     color: #ffc107;
+}
+
+.rating-stars label:hover i,
+.rating-stars label:hover ~ label i {
+    color: #ffc107;
+}
+
+.rating-stars input:checked ~ label i {
+    color: #ffc107;
+}
+
+.rating-value-display {
+    font-size: 0.9rem;
+    color: #666;
 }
 
 .text-warning .bi-star-fill,

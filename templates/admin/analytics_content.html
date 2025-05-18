@@ -7,9 +7,54 @@
 <li class="breadcrumb-item active">Content Performance</li>
 {% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h1 class="mb-4">Content Analytics</h1>
+    
+    <!-- Visual Content Performance Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Content Performance Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h5 class="text-center">Top Dishes by Rating</h5>
+                                <canvas id="ratingChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h5 class="text-center">Favorites Distribution</h5>
+                                <canvas id="favoritesChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h5 class="text-center">Content by Continent</h5>
+                                <canvas id="continentChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h5 class="text-center">User Engagement Over Time</h5>
+                                <canvas id="engagementChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <div class="row mb-4">
         <div class="col-12">
@@ -116,20 +161,173 @@
             </div>
         </div>
     </div>
-    
-    <!-- Visual Representation -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Content Performance Overview</h5>
-                </div>
-                <div class="card-body">
-                    <p class="card-text">This section could display charts and graphs showing dish popularity, rating trends over time, and other analytics.</p>
-                    <p class="text-muted">For implementation, consider using JavaScript libraries like Chart.js or D3.js to visualize the data.</p>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart colors
+    const colors = {
+        primary: '#0d6efd',
+        secondary: '#6c757d',
+        success: '#198754',
+        danger: '#dc3545',
+        warning: '#ffc107',
+        info: '#0dcaf0',
+        background: {
+            primary: 'rgba(13, 110, 253, 0.2)',
+            secondary: 'rgba(108, 117, 125, 0.2)',
+            success: 'rgba(25, 135, 84, 0.2)',
+            danger: 'rgba(220, 53, 69, 0.2)',
+            warning: 'rgba(255, 193, 7, 0.2)',
+            info: 'rgba(13, 202, 240, 0.2)'
+        }
+    };
+    
+    // 1. Top Dishes by Rating Chart
+    const ratingCtx = document.getElementById('ratingChart').getContext('2d');
+    new Chart(ratingCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ rating_labels|tojson }},
+            datasets: [{
+                label: 'Average Rating',
+                data: {{ rating_values|tojson }},
+                backgroundColor: colors.background.warning,
+                borderColor: colors.warning,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 5
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        footer: function(tooltipItems) {
+                            const item = tooltipItems[0];
+                            const count = {{ rating_counts|tojson }}[item.dataIndex];
+                            return `Based on ${count} ratings`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // 2. Favorites Distribution Chart
+    const favoritesCtx = document.getElementById('favoritesChart').getContext('2d');
+    new Chart(favoritesCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ favorite_labels|tojson }},
+            datasets: [{
+                data: {{ favorite_values|tojson }},
+                backgroundColor: [
+                    colors.background.danger,
+                    colors.background.primary,
+                    colors.background.success,
+                    colors.background.warning,
+                    colors.background.info
+                ],
+                borderColor: [
+                    colors.danger,
+                    colors.primary,
+                    colors.success,
+                    colors.warning,
+                    colors.info
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // 3. Content by Continent Chart
+    const continentCtx = document.getElementById('continentChart').getContext('2d');
+    new Chart(continentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ continent_labels|tojson }},
+            datasets: [{
+                data: {{ continent_values|tojson }},
+                backgroundColor: [
+                    colors.background.primary,
+                    colors.background.success,
+                    colors.background.warning,
+                    colors.background.danger,
+                    colors.background.info,
+                    colors.background.secondary
+                ],
+                borderColor: [
+                    colors.primary,
+                    colors.success,
+                    colors.warning,
+                    colors.danger,
+                    colors.info,
+                    colors.secondary
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+    
+    // 4. User Engagement Over Time Chart
+    const engagementCtx = document.getElementById('engagementChart').getContext('2d');
+    new Chart(engagementCtx, {
+        type: 'line',
+        data: {
+            labels: {{ time_labels|tojson }},
+            datasets: [
+                {
+                    label: 'Ratings',
+                    data: {{ ratings_by_time|tojson }},
+                    backgroundColor: colors.background.warning,
+                    borderColor: colors.warning,
+                    borderWidth: 2,
+                    tension: 0.3
+                },
+                {
+                    label: 'Favorites',
+                    data: {{ favorites_by_time|tojson }},
+                    backgroundColor: colors.background.danger,
+                    borderColor: colors.danger,
+                    borderWidth: 2,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
