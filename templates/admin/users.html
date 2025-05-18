@@ -86,12 +86,12 @@
                                         <td>{% if user.is_admin %}<span class="badge bg-danger">Admin</span>{% else %}<span class="badge bg-secondary">User</span>{% endif %}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-info" title="View Details">
+                                                <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-info" title="View Details">
                                                     <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-warning" title="Edit User">
+                                                </a>
+                                                <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-warning" title="Edit User">
                                                     <i class="bi bi-pencil"></i>
-                                                </button>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>

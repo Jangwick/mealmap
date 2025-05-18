@@ -576,7 +576,29 @@ def delete_dish(dish_id):
 @admin_required
 def admin_countries():
     countries = Country.query.all()
-    return render_template('admin/countries.html', countries=countries)
+    continents = Continent.query.all()
+    return render_template('admin/countries.html', countries=countries, continents=continents)
+
+# Add this new route
+@app.route('/admin/countries/delete/<int:country_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_country(country_id):
+    country = Country.query.get_or_404(country_id)
+    
+    # Check if country has dishes
+    has_dishes = Dish.query.filter_by(country_id=country_id).first() is not None
+    
+    if has_dishes:
+        flash('Cannot delete country that has dishes. Remove all dishes from this country first.', 'danger')
+        return redirect(url_for('admin_countries'))
+    
+    country_name = country.name
+    db.session.delete(country)
+    db.session.commit()
+    
+    flash(f'Country "{country_name}" deleted successfully!', 'success')
+    return redirect(url_for('admin_countries'))
 
 @app.route('/admin/countries/add', methods=['GET', 'POST'])
 @login_required
@@ -605,3 +627,107 @@ def add_country():
         return redirect(url_for('admin_countries'))
         
     return render_template('admin/add_country.html', continents=continents)
+
+@app.route('/admin/countries/edit/<int:country_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_country(country_id):
+    country = Country.query.get_or_404(country_id)
+    continents = Continent.query.all()
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        continent_id = request.form.get('continent_id')
+        
+        if not name or not continent_id:
+            flash('All fields are required!', 'danger')
+            return redirect(url_for('edit_country', country_id=country_id))
+            
+        existing_country = Country.query.filter(Country.name == name, Country.id != country_id).first()
+        if existing_country:
+            flash('Country name already exists!', 'danger')
+            return redirect(url_for('edit_country', country_id=country_id))
+            
+        country.name = name
+        country.continent_id = continent_id
+        db.session.commit()
+        
+        flash('Country updated successfully!', 'success')
+        return redirect(url_for('admin_countries'))
+        
+    return render_template('admin/edit_country.html', country=country, continents=continents)
+
+@app.route('/admin/users/<int:user_id>')
+@login_required
+@admin_required
+def admin_user_detail(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Get user's ratings with dish information
+    user_ratings = Rating.query.filter_by(user_id=user.id).order_by(Rating.created_at.desc()).all()
+    
+    # Get user's favorites
+    favorites = Favorite.query.filter_by(user_id=user.id).order_by(Favorite.created_at.desc()).all()
+    
+    # Get creation date and other metadata
+    user_joined = user.created_at if hasattr(user, 'created_at') else "Not available"
+    
+    # Calculate statistics
+    stats = {
+        'total_ratings': len(user_ratings),
+        'avg_rating': sum(r.rating for r in user_ratings) / len(user_ratings) if user_ratings else 0,
+        'total_favorites': len(favorites),
+        'recent_activity': max([r.created_at for r in user_ratings] + 
+                              [f.created_at for f in favorites], default=None) if (user_ratings or favorites) else None
+    }
+    
+    return render_template('admin/user_detail.html', 
+                          user=user, 
+                          ratings=user_ratings,
+                          favorites=favorites,
+                          stats=stats,
+                          user_joined=user_joined)
+
+# Add these new admin routes for user management
+
+@app.route('/admin/users/edit/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Don't allow editing the admin account if there's only one admin
+    if user.is_admin and User.query.filter_by(is_admin=True).count() <= 1 and 'is_admin' not in request.form:
+        flash('Cannot remove admin status from the only administrator.', 'danger')
+        return redirect(url_for('admin_user_detail', user_id=user.id))
+    
+    user.username = request.form.get('username')
+    user.email = request.form.get('email')
+    user.is_admin = 'is_admin' in request.form
+    
+    db.session.commit()
+    flash('User updated successfully.', 'success')
+    return redirect(url_for('admin_user_detail', user_id=user.id))
+
+@app.route('/admin/users/reset-password/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_reset_password(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Check if trying to reset admin password
+    if user.is_admin and current_user.id != user.id:
+        flash('For security reasons, admin passwords can only be reset by themselves.', 'danger')
+        return redirect(url_for('admin_user_detail', user_id=user.id))
+    
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if new_password != confirm_password:
+        flash('Passwords do not match.', 'danger')
+        return redirect(url_for('admin_user_detail', user_id=user.id))
+    
+    user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+    flash('Password reset successfully.', 'success')
+    return redirect(url_for('admin_user_detail', user_id=user.id))

@@ -70,6 +70,9 @@
                                                 <button type="button" class="btn btn-primary" title="Edit" data-bs-toggle="modal" data-bs-target="#editCountryModal{{ country.id }}">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteCountryModal{{ country.id }}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </div>
                                             
                                             <!-- Edit Country Modal -->
@@ -102,6 +105,35 @@
                                                                 <button type="submit" class="btn btn-primary">Save Changes</button>
                                                             </div>
                                                         </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Delete Country Modal -->
+                                            <div class="modal fade" id="deleteCountryModal{{ country.id }}" tabindex="-1" aria-labelledby="deleteCountryModalLabel{{ country.id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="deleteCountryModalLabel{{ country.id }}">Confirm Delete</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Are you sure you want to delete <strong>{{ country.name }}</strong>?</p>
+                                                            {% if country.dishes|length > 0 %}
+                                                                <div class="alert alert-warning">
+                                                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                                                    This country has {{ country.dishes|length }} dishes. You must remove or reassign all dishes before deleting this country.
+                                                                </div>
+                                                            {% else %}
+                                                                <p>This action cannot be undone.</p>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <form action="{{ url_for('delete_country', country_id=country.id) }}" method="post">
+                                                                <button type="submit" class="btn btn-danger" {% if country.dishes|length > 0 %}disabled{% endif %}>Delete</button>
+                                                            </form>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

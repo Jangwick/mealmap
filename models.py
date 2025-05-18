@@ -7,7 +7,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     favorites = db.relationship('Favorite', backref='user', lazy=True)
+    ratings = db.relationship('Rating', backref='user', lazy=True)
     
     def __repr__(self):
         return f'<User {self.username}>'

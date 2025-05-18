@@ -113,7 +113,18 @@
     </nav>
 
     <!-- Admin sub-navigation bar -->
-   
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <div class="bg-light py-2">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                    {% block admin_breadcrumb %}{% endblock %}
+                </ol>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
    
     <div class="container mt-4">
         {% with messages = get_flashed_messages(with_categories=true) %}

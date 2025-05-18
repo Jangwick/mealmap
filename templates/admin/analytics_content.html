@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Content Analytics - MealMap Admin{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item">Analytics</li>
+<li class="breadcrumb-item active">Content Performance</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Content Analytics</h1>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Top Rated Dishes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Dish Name</th>
+                                    <th>Country</th>
+                                    <th>Average Rating</th>
+                                    <th>Total Ratings</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dish_data in top_rated_dishes %}
+                                    {% set dish = dish_data[0] %}
+                                    {% set avg_rating = dish_data[1]|round(1) %}
+                                    {% set rating_count = dish_data[2] %}
+                                    <tr>
+                                        <td>{{ dish.name }}</td>
+                                        <td>{{ dish.country.name }}</td>
+                                        <td>
+                                            <div class="text-warning">
+                                                {% for i in range(5) %}
+                                                    {% if i < avg_rating|int %}
+                                                        <i class="bi bi-star-fill"></i>
+                                                    {% elif i < avg_rating %}
+                                                        <i class="bi bi-star-half"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <span class="ms-2">{{ avg_rating }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ rating_count }}</td>
+                                        <td>
+                                            <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-sm btn-info">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No ratings data available</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-heart-fill text-danger me-2"></i>Most Favorited Dishes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Dish Name</th>
+                                    <th>Country</th>
+                                    <th>Favorite Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dish_data in most_favorited %}
+                                    {% set dish = dish_data[0] %}
+                                    {% set favorite_count = dish_data[1] %}
+                                    <tr>
+                                        <td>{{ dish.name }}</td>
+                                        <td>{{ dish.country.name }}</td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ favorite_count }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-sm btn-info">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No favorites data available</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Visual Representation -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Content Performance Overview</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">This section could display charts and graphs showing dish popularity, rating trends over time, and other analytics.</p>
+                    <p class="text-muted">For implementation, consider using JavaScript libraries like Chart.js or D3.js to visualize the data.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
