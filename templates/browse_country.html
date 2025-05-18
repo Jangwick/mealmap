@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ country.name }} Cuisine - MealMap{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Traditional Foods of {{ country.name }}</h1>
+    
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('browse_continent', continent_name=country.continent.name) }}">{{ country.continent.name }}</a></li>
+            <li class="breadcrumb-item active">{{ country.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for dish in dishes %}
+            <div class="col">
+                <div class="card h-100">
+                    {% if dish.image_path %}
+                        <img src="{{ url_for('static', filename=dish.image_path) }}" class="card-img-top dish-thumbnail" alt="{{ dish.name }}">
+                    {% else %}
+                        <div class="card-img-top dish-thumbnail-placeholder">No Image</div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ dish.name }}</h5>
+                        <p class="card-text">{{ dish.description|truncate(100) }}</p>
+                        <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No dishes have been added for {{ country.name }} yet.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

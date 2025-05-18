@@ -1,0 +1,450 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ dish.name }} - MealMap{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('browse_continent', continent_name=dish.country.continent.name) }}">{{ dish.country.continent.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('browse_country', country_name=dish.country.name) }}">{{ dish.country.name }}</a></li>
+            <li class="breadcrumb-item active">{{ dish.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-5">
+        <!-- Left column - Dish Image -->
+        <div class="col-md-6 mb-4">
+            <div class="position-relative">
+                {% if dish.image_path %}
+                    <img src="{{ url_for('static', filename=dish.image_path) }}" class="img-fluid rounded dish-main-image" alt="{{ dish.name }}">
+                {% else %}
+                    <div class="dish-image-placeholder rounded">No Image Available</div>
+                {% endif %}
+                
+                <div class="share-btn" id="shareBtn" title="Share this dish">
+                    <i class="bi bi-share"></i>
+                </div>
+                
+                {% if admin_edit %}
+                <div class="admin-badge" title="Curated by admin">
+                    <i class="bi bi-shield-check"></i> Curated
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Social Share Modal -->
+            <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="shareModalLabel">Share "{{ dish.name }}"</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="d-flex justify-content-center social-icons mb-3">
+                                <a href="#" class="mx-2 social-icon" id="twitterShare" target="_blank">
+                                    <i class="bi bi-twitter text-info"></i>
+                                </a>
+                                <a href="#" class="mx-2 social-icon" id="facebookShare" target="_blank">
+                                    <i class="bi bi-facebook text-primary"></i>
+                                </a>
+                                <a href="#" class="mx-2 social-icon" id="whatsappShare" target="_blank">
+                                    <i class="bi bi-whatsapp text-success"></i>
+                                </a>
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="shareLink" readonly>
+                                <button class="btn btn-outline-secondary" type="button" id="copyLinkBtn">
+                                    <i class="bi bi-clipboard"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right column - Dish Info -->
+        <div class="col-md-6">
+            <div class="dish-header mb-3">
+                <h1 class="display-5 mb-2">{{ dish.name }}</h1>
+                <div class="d-flex flex-wrap align-items-center mb-3 gap-2">
+                    <a href="{{ url_for('browse_country', country_name=dish.country.name) }}" class="badge bg-primary text-decoration-none">
+                        <i class="bi bi-globe"></i> {{ dish.country.name }}
+                    </a>
+                    <a href="{{ url_for('browse_continent', continent_name=dish.country.continent.name) }}" class="badge bg-secondary text-decoration-none">
+                        <i class="bi bi-map"></i> {{ dish.country.continent.name }}
+                    </a>
+                    
+                    {% if avg_rating > 0 %}
+                    <div class="badge bg-warning text-dark">
+                        <div class="d-flex align-items-center">
+                            <div class="me-1">
+                                {% for i in range(5) %}
+                                    {% if i < avg_rating|int %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% elif i < avg_rating %}
+                                        <i class="bi bi-star-half"></i>
+                                    {% else %}
+                                        <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span>{{ avg_rating|round(1) }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if current_user.is_authenticated %}
+                <button 
+                    id="favoriteBtn" 
+                    class="btn mb-4 {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                    data-dish-id="{{ dish.id }}"
+                    data-is-favorite="{{ 'true' if is_favorite else 'false' }}"
+                >
+                    <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    {% if is_favorite %}Remove from Favorites{% else %}Add to Favorites{% endif %}
+                </button>
+            {% endif %}
+            
+            <div class="dish-description mb-4">
+                <h5 class="mb-3">About this dish</h5>
+                <p class="lead">{{ dish.description }}</p>
+            </div>
+            
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <div class="admin-actions mb-4">
+                <a href="{{ url_for('edit_dish', dish_id=dish.id) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Edit Dish
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-12 mb-4">
+            <h3>Ratings & Reviews</h3>
+            {% if current_user.is_authenticated %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Leave a Rating</h5>
+                        <form action="{{ url_for('rate_dish', dish_id=dish.id) }}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label">Your Rating</label>
+                                <div class="rating-stars">
+                                    {% for i in range(1, 6) %}
+                                        <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" required>
+                                        <label for="star{{ i }}"><i class="bi bi-star"></i></label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="comment" class="form-label">Review (Optional)</label>
+                                <textarea class="form-control" id="comment" name="comment" rows="3" placeholder="Share your thoughts about this dish..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit Rating</button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <a href="{{ url_for('login') }}">Log in</a> or <a href="{{ url_for('register') }}">register</a> to leave a rating.
+                </div>
+            {% endif %}
+            
+            {% if ratings %}
+                <div class="ratings-summary mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center mb-3 mb-md-0">
+                            <div class="display-4 fw-bold text-warning">{{ avg_rating|round(1) }}</div>
+                            <div class="text-warning mb-2">
+                                {% for i in range(5) %}
+                                    {% if i < avg_rating|int %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% elif i < avg_rating %}
+                                        <i class="bi bi-star-half"></i>
+                                    {% else %}
+                                        <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="text-muted">{{ ratings|length }} reviews</div>
+                        </div>
+                        <div class="col-md-9">
+                            <!-- Rating bars -->
+                            {% for i in range(5, 0, -1) %}
+                                {% set count = ratings|selectattr('rating', 'eq', i)|list|length %}
+                                {% set percentage = (count / ratings|length * 100)|round|int if ratings|length > 0 else 0 %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="text-warning me-2">{{ i }} <i class="bi bi-star-fill"></i></div>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ percentage }}%" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="ms-2 text-muted small">{{ count }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="list-group">
+                    {% for rating in ratings %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">
+                                    <span class="text-warning">
+                                        {% for i in range(5) %}
+                                            <i class="bi {% if i < rating.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                                        {% endfor %}
+                                    </span>
+                                </h5>
+                                <small class="text-muted">{{ rating.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                            <p class="mb-1 fw-bold">{{ rating.user.username }}</p>
+                            {% if rating.comment %}
+                                <p class="mb-1">{{ rating.comment }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 bg-light rounded">
+                    <i class="bi bi-chat-square-text text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">No ratings yet</h5>
+                    <p class="text-muted">Be the first to rate this dish!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Similar Dishes Section -->
+    {% if similar_dishes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-4">More Dishes from {{ dish.country.name }}</h3>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for similar in similar_dishes %}
+                    <div class="col">
+                        <div class="card h-100">
+                            {% if similar.image_path %}
+                                <img src="{{ url_for('static', filename=similar.image_path) }}" class="card-img-top dish-thumbnail" alt="{{ similar.name }}">
+                            {% else %}
+                                <div class="card-img-top dish-thumbnail-placeholder">No Image</div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ similar.name }}</h5>
+                                <p class="card-text">{{ similar.description|truncate(80) }}</p>
+                            </div>
+                            <div class="card-footer bg-white border-top-0">
+                                <a href="{{ url_for('dish_detail', dish_id=similar.id) }}" class="btn btn-outline-primary w-100">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    .dish-main-image {
+        width: 100%;
+        max-height: 500px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .share-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background-color: rgba(255,255,255,0.9);
+        color: #0d6efd;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s;
+    }
+    
+    .share-btn:hover {
+        background-color: #0d6efd;
+        color: white;
+        transform: scale(1.1);
+    }
+    
+    .admin-badge {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        background-color: rgba(33, 37, 41, 0.8);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .social-icon {
+        font-size: 2rem;
+        display: inline-flex;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+    
+    .social-icon:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Star rating functionality
+        const stars = document.querySelectorAll('.rating-stars label');
+        stars.forEach((star, index) => {
+            star.addEventListener('mouseover', () => {
+                for (let i = 0; i <= index; i++) {
+                    stars[i].querySelector('i').classList.remove('bi-star');
+                    stars[i].querySelector('i').classList.add('bi-star-fill');
+                }
+                for (let i = index + 1; i < stars.length; i++) {
+                    stars[i].querySelector('i').classList.remove('bi-star-fill');
+                    stars[i].querySelector('i').classList.add('bi-star');
+                }
+            });
+        });
+        
+        // Reset stars on mouse out if no rating is selected
+        const ratingContainer = document.querySelector('.rating-stars');
+        if (ratingContainer) {
+            ratingContainer.addEventListener('mouseout', () => {
+                const selectedRating = document.querySelector('.rating-stars input:checked');
+                if (!selectedRating) {
+                    stars.forEach(star => {
+                        star.querySelector('i').classList.remove('bi-star-fill');
+                        star.querySelector('i').classList.add('bi-star');
+                    });
+                } else {
+                    const ratingValue = parseInt(selectedRating.value);
+                    stars.forEach((star, index) => {
+                        if (index < ratingValue) {
+                            star.querySelector('i').classList.remove('bi-star');
+                            star.querySelector('i').classList.add('bi-star-fill');
+                        } else {
+                            star.querySelector('i').classList.remove('bi-star-fill');
+                            star.querySelector('i').classList.add('bi-star');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Handle favorite button
+        const favoriteBtn = document.getElementById('favoriteBtn');
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', function() {
+                const dishId = this.dataset.dishId;
+                
+                fetch(`/favorite/${dishId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const isFavorite = this.dataset.isFavorite === 'true';
+                        
+                        // Toggle favorite state
+                        if (isFavorite) {
+                            this.classList.remove('btn-danger');
+                            this.classList.add('btn-outline-danger');
+                            this.querySelector('i').classList.remove('bi-heart-fill');
+                            this.querySelector('i').classList.add('bi-heart');
+                            this.innerHTML = ' Add to Favorites';
+                            this.prepend(document.createElement('i'));
+                            this.querySelector('i').classList.add('bi', 'bi-heart');
+                            this.dataset.isFavorite = 'false';
+                        } else {
+                            this.classList.remove('btn-outline-danger');
+                            this.classList.add('btn-danger');
+                            this.querySelector('i').classList.remove('bi-heart');
+                            this.querySelector('i').classList.add('bi-heart-fill');
+                            this.innerHTML = ' Remove from Favorites';
+                            this.prepend(document.createElement('i'));
+                            this.querySelector('i').classList.add('bi', 'bi-heart-fill');
+                            this.dataset.isFavorite = 'true';
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Share functionality
+        const shareBtn = document.getElementById('shareBtn');
+        const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+        
+        if (shareBtn) {
+            shareBtn.addEventListener('click', function() {
+                const dishId = {{ dish.id }};
+                
+                // Fetch sharing links
+                fetch(`/dish/${dishId}/share`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('shareLink').value = data.share_url;
+                        document.getElementById('twitterShare').href = data.twitter_url;
+                        document.getElementById('facebookShare').href = data.facebook_url;
+                        document.getElementById('whatsappShare').href = data.whatsapp_url;
+                        
+                        shareModal.show();
+                    });
+            });
+            
+            // Copy link to clipboard
+            document.getElementById('copyLinkBtn').addEventListener('click', function() {
+                const shareLinkInput = document.getElementById('shareLink');
+                shareLinkInput.select();
+                document.execCommand('copy');
+                
+                // Change button text briefly to indicate copying
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="bi bi-clipboard-check"></i> Copied!';
+                this.classList.add('btn-success');
+                this.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
+    });
+</script>
+{% endblock %}

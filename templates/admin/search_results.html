@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results - MealMap Admin{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item active">Search Results</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Search Results</h1>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Results for "{{ query }}" in {{ search_type }}s</h5>
+        </div>
+        <div class="card-body">
+            {% if results %}
+                {% if search_type == 'dish' %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Country</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dish in results %}
+                            <tr>
+                                <td>{{ dish.name }}</td>
+                                <td>{{ dish.country.name }}</td>
+                                <td>{{ dish.description|truncate(100) }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-info" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_dish', dish_id=dish.id) }}" class="btn btn-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% elif search_type == 'country' %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Continent</th>
+                                <th>Dishes Count</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for country in results %}
+                            <tr>
+                                <td>{{ country.name }}</td>
+                                <td>{{ country.continent.name }}</td>
+                                <td>{{ country.dishes|length }}</td>
+                                <td>
+                                    <a href="{{ url_for('browse_country', country_name=country.name) }}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% elif search_type == 'user' %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in results %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{% if user.is_admin %}Admin{% else %}User{% endif %}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">No results found for "{{ query }}" in {{ search_type }}s.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

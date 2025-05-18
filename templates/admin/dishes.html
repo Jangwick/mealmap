@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Dishes - MealMap Admin{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin_dishes') }}">Content Management</a></li>
+<li class="breadcrumb-item active">Dishes</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Manage Dishes</h1>
+        <div>
+            <a href="{{ url_for('add_dish') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle me-1"></i> Add New Dish
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="list-group admin-sidebar">
+                <a href="{{ url_for('admin_dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin_dishes') }}" class="list-group-item list-group-item-action active">
+                    <i class="bi bi-cup-hot me-2"></i> Manage Dishes
+                </a>
+                <a href="{{ url_for('admin_countries') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-globe-americas me-2"></i> Manage Countries
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-people me-2"></i> Manage Users
+                </a>
+            </div>
+            
+            <div class="card mt-4 admin-tips-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Quick Tips</h5>
+                </div>
+                <div class="card-body">
+                    <p>Use the search box to quickly find dishes by name, country, or continent.</p>
+                    <p>Click the actions buttons to view, edit, or delete dishes.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card admin-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>All Dishes</h5>
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="dishSearch" class="form-control" placeholder="Search dishes...">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover admin-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Country</th>
+                                    <th>Continent</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dish in dishes %}
+                                    <tr>
+                                        <td>{{ dish.name }}</td>
+                                        <td>{{ dish.country.name }}</td>
+                                        <td>{{ dish.country.continent.name }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-info" title="View">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_dish', dish_id=dish.id) }}" class="btn btn-warning" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteModal{{ dish.id }}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Delete Modal -->
+                                            <div class="modal fade" id="deleteModal{{ dish.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ dish.id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="deleteModalLabel{{ dish.id }}">Confirm Delete</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            Are you sure you want to delete <strong>{{ dish.name }}</strong>? This action cannot be undone.
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <form action="{{ url_for('delete_dish', dish_id=dish.id) }}" method="post">
+                                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No dishes found. <a href="{{ url_for('add_dish') }}">Add your first dish</a>.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('dishSearch');
+        const tableRows = document.querySelectorAll('tbody tr');
+        
+        searchInput.addEventListener('keyup', function() {
+            const query = this.value.toLowerCase();
+            
+            tableRows.forEach(row => {
+                const name = row.cells[0].textContent.toLowerCase();
+                const country = row.cells[1].textContent.toLowerCase();
+                const continent = row.cells[2].textContent.toLowerCase();
+                
+                if (name.includes(query) || country.includes(query) || continent.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

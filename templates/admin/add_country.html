@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Country - MealMap Admin{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin_dishes') }}">Content Management</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin_countries') }}">Countries</a></li>
+<li class="breadcrumb-item active">Add New</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Add New Country</h1>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="list-group admin-sidebar">
+                <a href="{{ url_for('admin_dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin_dishes') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-cup-hot me-2"></i> Manage Dishes
+                </a>
+                <a href="{{ url_for('admin_countries') }}" class="list-group-item list-group-item-action active">
+                    <i class="bi bi-globe-americas me-2"></i> Manage Countries
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-people me-2"></i> Manage Users
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card admin-card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>New Country Information</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('add_country') }}" method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Country Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="continent_id" class="form-label">Continent</label>
+                            <select class="form-select" id="continent_id" name="continent_id" required>
+                                <option value="" selected disabled>Select a continent</option>
+                                {% for continent in continents %}
+                                    <option value="{{ continent.id }}">{{ continent.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_countries') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Add Country</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

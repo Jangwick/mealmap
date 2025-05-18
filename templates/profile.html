@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - MealMap{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">My Profile</h1>
+    
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <!-- Account Information Card -->
+            <div class="card profile-card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="profile-avatar mb-3 text-center">
+                        <div class="avatar-circle">
+                            <span class="avatar-text">{{ current_user.username[0]|upper }}</span>
+                        </div>
+                        <h5 class="mt-3">{{ current_user.username }}</h5>
+                    </div>
+                    <p><strong>Email:</strong> {{ current_user.email }}</p>
+                    <p><strong>Account Type:</strong> {% if current_user.is_admin %}Admin{% else %}User{% endif %}</p>
+                    <p><strong>Member Since:</strong> {{ current_user.created_at.strftime('%B %d, %Y') if current_user.created_at else 'N/A' }}</p>
+                    
+                    <button class="btn btn-outline-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#editProfileForm">
+                        <i class="bi bi-pencil me-1"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Collapsed Edit Profile Form -->
+            <div class="collapse mb-4" id="editProfileForm">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Update Profile</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ url_for('profile') }}">
+                            <input type="hidden" name="update_profile" value="1">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+                                <small class="form-text text-muted">Username cannot be changed</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                <small class="form-text text-muted">Required to save changes</small>
+                            </div>
+                            <hr>
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                                <small class="form-text text-muted">Leave blank if you don't want to change</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Stats Card -->
+            <div class="card profile-stats-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Your Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h3 class="mb-0">{{ favorite_dishes|length }}</h3>
+                            <small class="text-muted">Favorites</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h3 class="mb-0">{{ user_ratings|length }}</h3>
+                            <small class="text-muted">Reviews</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-8">
+            <!-- Tabbed Content -->
+            <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button" role="tab" aria-controls="favorites" aria-selected="true">
+                        <i class="bi bi-heart me-1"></i> Favorites
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ratings-tab" data-bs-toggle="tab" data-bs-target="#ratings" type="button" role="tab" aria-controls="ratings" aria-selected="false">
+                        <i class="bi bi-star me-1"></i> My Ratings
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="profileTabContent">
+                <!-- Favorites Tab -->
+                <div class="tab-pane fade show active" id="favorites" role="tabpanel" aria-labelledby="favorites-tab">
+                    {% if favorite_dishes %}
+                        <div class="row row-cols-1 row-cols-md-2 g-4">
+                            {% for dish in favorite_dishes %}
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <div class="position-relative">
+                                            {% if dish.image_path %}
+                                                <img src="{{ url_for('static', filename=dish.image_path) }}" class="card-img-top dish-thumbnail" alt="{{ dish.name }}">
+                                            {% else %}
+                                                <div class="card-img-top dish-thumbnail-placeholder">No Image</div>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 remove-favorite-btn"
+                                                   data-dish-id="{{ dish.id }}"
+                                                   title="Remove from favorites">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ dish.name }}</h5>
+                                            <p class="card-subtitle text-muted small mb-2">{{ dish.country.name }}</p>
+                                            <p class="card-text small">{{ dish.description|truncate(80) }}</p>
+                                        </div>
+                                        <div class="card-footer bg-white border-top-0">
+                                            <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-sm btn-primary w-100">View Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-heart text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="text-muted">You haven't added any favorite dishes yet.</h5>
+                            <p class="text-muted">Explore dishes and click the heart icon to add them to your favorites.</p>
+                            <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">Explore Dishes</a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Ratings Tab -->
+                <div class="tab-pane fade" id="ratings" role="tabpanel" aria-labelledby="ratings-tab">
+                    {% if user_ratings %}
+                        <div class="list-group">
+                            {% for rating in user_ratings %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <h5 class="mb-1">
+                                            <a href="{{ url_for('dish_detail', dish_id=rating.dish.id) }}">{{ rating.dish.name }}</a>
+                                        </h5>
+                                        <small class="text-muted">{{ rating.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="text-warning me-2">
+                                            {% for i in range(5) %}
+                                                <i class="bi {% if i < rating.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                        <span class="badge bg-secondary">{{ rating.dish.country.name }}</span>
+                                    </div>
+                                    {% if rating.comment %}
+                                        <p class="mb-1">{{ rating.comment }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-star text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="text-muted">You haven't rated any dishes yet.</h5>
+                            <p class="text-muted">Rate dishes to help other users discover great traditional foods.</p>
+                            <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">Explore and Rate Dishes</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        background-color: #0d6efd;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    
+    .avatar-text {
+        font-size: 3rem;
+        color: #ffffff;
+        font-weight: bold;
+    }
+    
+    .profile-card, .profile-stats-card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle favorite removal buttons
+        const removeFavBtns = document.querySelectorAll('.remove-favorite-btn');
+        
+        removeFavBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const dishId = this.dataset.dishId;
+                const card = this.closest('.col');
+                
+                fetch(`/favorite/${dishId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Animate removal of the card
+                        card.style.transition = 'opacity 0.3s, transform 0.3s';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.8)';
+                        
+                        setTimeout(() => {
+                            card.remove();
+                            
+                            // Check if there are no more favorites
+                            const remainingCards = document.querySelectorAll('#favorites .col');
+                            if (remainingCards.length === 0) {
+                                const emptyState = `
+                                    <div class="text-center py-5">
+                                        <div class="mb-3">
+                                            <i class="bi bi-heart text-muted" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5 class="text-muted">You haven't added any favorite dishes yet.</h5>
+                                        <p class="text-muted">Explore dishes and click the heart icon to add them to your favorites.</p>
+                                        <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">Explore Dishes</a>
+                                    </div>
+                                `;
+                                document.querySelector('#favorites .row').innerHTML = emptyState;
+                            }
+                        }, 300);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

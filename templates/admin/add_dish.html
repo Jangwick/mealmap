@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Dish - MealMap Admin{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin_dishes') }}">Content Management</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin_dishes') }}">Dishes</a></li>
+<li class="breadcrumb-item active">Add New</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Add New Dish</h1>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="list-group admin-sidebar">
+                <a href="{{ url_for('admin_dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin_dishes') }}" class="list-group-item list-group-item-action active">
+                    <i class="bi bi-cup-hot me-2"></i> Manage Dishes
+                </a>
+                <a href="{{ url_for('admin_countries') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-globe-americas me-2"></i> Manage Countries
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-people me-2"></i> Manage Users
+                </a>
+            </div>
+            
+            <div class="card mt-4 admin-tips-card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Tips</h5>
+                </div>
+                <div class="card-body">
+                    <p>Add high-quality images for better user experience.</p>
+                    <p>Provide detailed descriptions to help users understand the dish.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card admin-card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>New Dish Information</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('add_dish') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Dish Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="country_id" class="form-label">Country</label>
+                            <select class="form-select" id="country_id" name="country_id" required>
+                                <option value="" selected disabled>Select a country</option>
+                                {% for country in countries %}
+                                    <option value="{{ country.id }}">{{ country.name }} ({{ country.continent.name }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                If the country is not listed, <a href="{{ url_for('add_country') }}">add it first</a>.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Image</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            <div class="form-text">Upload a high-quality image of the dish. Supported formats: JPG, PNG, GIF.</div>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_dishes') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Add Dish</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

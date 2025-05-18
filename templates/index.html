@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block title %}MealMap - Discover Traditional Foods{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section py-5 mb-5 bg-primary text-white text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold">Explore the World's Culinary Heritage</h1>
+        <p class="lead mb-4">Discover traditional foods from different cultures and expand your culinary horizons</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a class="btn btn-light btn-lg px-4" href="#explore">Explore by Region</a>
+            <a class="btn btn-outline-light btn-lg px-4" href="{{ url_for('food_map') }}">
+                <i class="bi bi-map"></i> Interactive Map
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Dishes Section -->
+<section class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h2">Featured Dishes</h2>
+        <div>
+            <a href="{{ url_for('search') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        {% if featured_dishes %}
+            {% for dish_info in featured_dishes %}
+                {% set dish = dish_info[0] %}
+                {% set avg_rating = dish_info[1] %}
+                <div class="col-md-4">
+                    <div class="card h-100 featured-dish-card">
+                        <div class="position-relative">
+                            {% if dish.image_path %}
+                                <img src="{{ url_for('static', filename=dish.image_path) }}" class="card-img-top dish-thumbnail" alt="{{ dish.name }}">
+                            {% else %}
+                                <div class="card-img-top dish-thumbnail-placeholder">No Image</div>
+                            {% endif %}
+                            <div class="featured-badge">
+                                <i class="bi bi-award-fill"></i> Top Rated
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ dish.name }}</h5>
+                            <p class="card-subtitle mb-2 text-muted">{{ dish.country.name }}, {{ dish.country.continent.name }}</p>
+                            <div class="dish-rating mb-3">
+                                <div class="text-warning">
+                                    {% for i in range(5) %}
+                                        {% if i < avg_rating|int %}
+                                            <i class="bi bi-star-fill"></i>
+                                        {% elif i < avg_rating %}
+                                            <i class="bi bi-star-half"></i>
+                                        {% else %}
+                                            <i class="bi bi-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-1 text-muted">{{ avg_rating|round(1) }}</span>
+                                </div>
+                            </div>
+                            <p class="card-text">{{ dish.description|truncate(100) }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-primary w-100">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">No featured dishes yet. Check back soon!</div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Explore by Region Section -->
+<section id="explore" class="container mb-5">
+    <h2 class="h2 mb-4">Explore by Region</h2>
+    
+    <div class="row g-4">
+        {% for continent in continents %}
+            <div class="col-md-4 col-lg-4 mb-4">
+                <div class="card region-card h-100">
+                    <div class="card-body">
+                        <h3 class="card-title h5">{{ continent.name }}</h3>
+                        <p class="card-text text-muted">
+                            {% set country_count = continent.countries|length %}
+                            {{ country_count }} {% if country_count == 1 %}country{% else %}countries{% endif %}
+                        </p>
+                        <div class="d-flex flex-wrap region-chips">
+                            {% for country in continent.countries[:5] %}
+                                <a href="{{ url_for('browse_country', country_name=country.name) }}" class="region-chip">
+                                    {{ country.name }}
+                                </a>
+                            {% endfor %}
+                            {% if continent.countries|length > 5 %}
+                                <span class="region-chip more-chip">+{{ continent.countries|length - 5 }} more</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top-0">
+                        <a href="{{ url_for('browse_continent', continent_name=continent.name) }}" class="btn btn-outline-primary w-100">
+                            Explore {{ continent.name }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Popular Dishes -->
+<section class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h2">Most Popular Dishes</h2>
+    </div>
+    
+    <div class="row g-4">
+        {% if popular_dishes %}
+            {% for dish_info in popular_dishes %}
+                {% set dish = dish_info[0] %}
+                {% set fav_count = dish_info[1] %}
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        {% if dish.image_path %}
+                            <img src="{{ url_for('static', filename=dish.image_path) }}" class="card-img-top dish-thumbnail" alt="{{ dish.name }}">
+                        {% else %}
+                            <div class="card-img-top dish-thumbnail-placeholder">No Image</div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ dish.name }}</h5>
+                            <p class="card-subtitle mb-2 text-muted">{{ dish.country.name }}</p>
+                            <div class="mb-3">
+                                <i class="bi bi-heart-fill text-danger"></i>
+                                <span class="text-muted">{{ fav_count }} people favorited this dish</span>
+                            </div>
+                            <p class="card-text">{{ dish.description|truncate(80) }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-outline-primary w-100">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">No popular dishes yet. Be the first to favorite a dish!</div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Latest Additions -->
+<section class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h2">Latest Additions</h2>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <div>
+            <a href="{{ url_for('add_dish') }}" class="btn btn-sm btn-success">
+                <i class="bi bi-plus-circle"></i> Add New Dish
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for dish in latest_dishes %}
+            <div class="col">
+                <div class="card h-100">
+                    {% if dish.image_path %}
+                        <img src="{{ url_for('static', filename=dish.image_path) }}" class="card-img-top dish-thumbnail" alt="{{ dish.name }}">
+                    {% else %}
+                        <div class="card-img-top dish-thumbnail-placeholder">No Image</div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ dish.name }}</h5>
+                        <p class="card-subtitle text-muted mb-2">{{ dish.country.name }}</p>
+                        <p class="card-text">{{ dish.description|truncate(100) }}</p>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Added {{ dish.created_at.strftime('%Y-%m-%d') }}</small>
+                        <a href="{{ url_for('dish_detail', dish_id=dish.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12 text-center">
+                <p>No dishes available yet. Check back soon!</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Call to action -->
+<section class="container-fluid cta-section py-5 text-center mb-5">
+    <div class="container">
+        <h2 class="h1 mb-4">Discover More Traditional Foods</h2>
+        <p class="lead mb-4">Join our community to rate dishes, save your favorites, and explore the world's culinary traditions.</p>
+        <div class="d-flex justify-content-center gap-3">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('food_map') }}" class="btn btn-primary btn-lg">Explore Interactive Map</a>
+            {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Join Now</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block head %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        border-radius: 0 0 2rem 2rem;
+    }
+    
+    .featured-dish-card {
+        transition: transform 0.3s;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .featured-dish-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .featured-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #ffc107;
+        color: #212529;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .region-card {
+        transition: all 0.3s;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .region-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .region-chips {
+        gap: 0.5rem;
+    }
+    
+    .region-chip {
+        display: inline-block;
+        background-color: #f8f9fa;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .region-chip:hover {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    .more-chip {
+        background-color: #e9ecef;
+        cursor: default;
+    }
+    
+    .more-chip:hover {
+        background-color: #e9ecef;
+        color: #6c757d;
+        border-color: #dee2e6;
+    }
+    
+    .cta-section {
+        background-color: #f8f9fa;
+        border-radius: 1rem;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}

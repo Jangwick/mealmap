@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ continent.name }} - MealMap{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Explore {{ continent.name }}</h1>
+    
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+            <li class="breadcrumb-item active">{{ continent.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row mb-4">
+        {% for country in countries %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ country.name }}</h5>
+                        <p class="card-text">Explore traditional dishes from {{ country.name }}.</p>
+                        <a href="{{ url_for('browse_country', country_name=country.name) }}" class="btn btn-primary">Explore {{ country.name }}</a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No countries have been added for {{ continent.name }} yet.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
